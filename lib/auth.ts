@@ -13,12 +13,13 @@ function getSecret() {
 }
 
 export async function createSession(userId: string) {
+  const cookieStore = await cookies();
   const token = await new SignJWT({ sub: userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${sessionDuration}s`)
     .sign(getSecret());
-  cookies().set(cookieName, token, {
+  cookieStore.set(cookieName, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -28,11 +29,12 @@ export async function createSession(userId: string) {
 }
 
 export async function clearSession() {
-  cookies().delete(cookieName);
+  const cookieStore = await cookies();
+  cookieStore.delete(cookieName);
 }
 
 export async function getCurrentUser() {
-  const token = cookies().get(cookieName)?.value;
+  const token = (await cookies()).get(cookieName)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, getSecret());
